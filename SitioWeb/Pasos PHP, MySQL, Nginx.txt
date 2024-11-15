@@ -1,0 +1,201 @@
+:::::::::: Pasos para instalación de Nginx, PHP y cliente de MySQL ::::::::::::::::::::::::::
+
+Comandos a ejecutar:
+	sudo apt update && sudo apt upgrade -y
+Para Nginx:	
+	sudo apt install nginx -y
+	sudo systemctl status nginx
+
+Para instalar el driver de Php FPM con MySQL:	
+	sudo apt install php-fpm php-mysql -y
+
+Modificación manual:  o guardar como archivo y copiarlos por medio de SFTP.
+	
+	sudo nano /etc/nginx/sites-available/default
+	# sudo vi /etc/nginx/sites-available/default
+	
+	###Copiar de aqui hasta el fin del archivo
+	server {
+		listen 80 default_server;
+		listen [::]:80 default_server;
+
+		root /var/www/html;
+		index index.php index.html index.htm;
+
+		server_name _;
+
+		location / {
+			try_files $uri $uri/ =404;
+		}
+
+		location ~ \.php$ {
+			include snippets/fastcgi-php.conf;
+			fastcgi_pass unix:/var/run/php/php-fpm.sock;
+		}
+
+		location ~ /\.ht {
+			deny all;
+		}
+	}
+	###Fin del archivo
+
+Reiniciar servicio de Nginx:
+	sudo systemctl reload nginx
+
+Para instalar el driver de BD:
+	sudo apt install mysql-client -y
+
+# Prueba de funcionamiento de PHP
+	Editar o crear archivo:
+	sudo nano /var/www/html/info.php
+	# sudo vi /var/www/html/info.php
+	
+	Copiar el siguiente contenido:
+	
+	<?php
+	phpinfo();
+	?>
+
+Probar servidor:
+	
+Probar Conexión a la BD: 
+Estructura:
+	mysql -u [nombre_de_usuario] -h [dirección_IP_de_la_base_de_datos_remota] -p
+Ejemplo:
+	mysql -u admin -h dbmysql.cul1rokptvup.us-west-1.rds.amazonaws.com -p 
+	
+	
+:::::::::::::::::::::::::::::: Script SQL ::::::::::::::::::::::::::::::
+
+CREATE DATABASE epinedaPodcast;
+
+USE epinedaPodcast;
+
+CREATE TABLE Publicacion (
+  id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(50) NOT NULL,
+  comentario VARCHAR(255) NOT NULL,
+  fecha DATE
+)
+
+
+:::::::::::::::::::::::::::::: Conexión en PHP ::::::::::::::::::::::::::::::
+
+Crear archivos en /var/www/html
+
+
+crear archivo inicio.html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Insercion de datos en MySQL con PHP</title>
+</head>
+<body>
+	<h1>Insercion de datos en MySQL con PHP</h1>
+	<form action="insertar.php" method="post">
+	  <label for="nombre">Nombre:</label>
+	  <input type="text" id="nombre" name="nombre"><br><br>
+	  <label for="comentario">comentario:</label>
+	  <input type="text" id="comentario" name="comentario"><br><br>
+	  <label for="fecha">Fecha:</label>
+	  <input type="date" id="fecha" name="fecha"><br><br>
+	  <input type="submit" value="Guardar">
+	</form>
+
+	<form action="consultar.php" method="post">
+	  <label for="fecha_consulta">Consultar publicaciones a partir de la fecha:</label>
+	  <input type="date" id="fecha_consulta" name="fecha_consulta"><br><br>
+	  <input type="submit" value="Consultar">
+	</form>
+</body>
+</html>
+
+
+crear archivo conexion.php
+<?php
+  // Información de conexión a la base de datos
+  $servername = "dbwebapp.cul1rokptvup.us-west-1.rds.amazonaws.com";
+  $username = "admin";
+  $password = "Erick$1919";
+  $dbname = "epinedaPodcast";
+
+  // Establecer la conexión
+  $conn = mysqli_connect($servername, $username, $password, $dbname);
+
+  // Verificar la conexión
+  if (!$conn) {
+    die("Conexión fallida: " . mysqli_connect_error());
+  }
+
+  echo "Conexión exitosa";
+?>
+
+
+
+crear archivo insertar.php
+<?php
+  // Establecer la conexión con la base de datos
+  include "conexion.php";
+
+  // Tomar los datos del formulario
+  $nombre = $_POST['nombre'];
+  $comentario = $_POST['comentario'];
+  $fecha = $_POST['fecha'];
+
+  // Insertar los datos en la tabla "Publicacion"
+  $sql = "INSERT INTO epinedaPodcast.Publicacion (nombre, comentario, fecha) VALUES ('$nombre', '$comentario', '$fecha')";
+
+  if (mysqli_query($conn, $sql)) {
+    echo "La publicación se ha guardado correctamente.";
+  } else {
+    echo "Error al guardar la publicación: " . mysqli_error($conn);
+  }
+
+  // Cerrar la conexión
+  mysqli_close($conn);
+?>
+
+
+
+crear archivo consultar.php
+<?php
+  // Establecer la conexión con la base de datos
+  include "conexion.php";
+
+  // Tomar la fecha del formulario de consulta
+  $fecha_consulta = $_POST['fecha_consulta'];
+
+  // Consultar los datos de la tabla "Publicacion" que tienen una fecha igual o posterior a la fecha ingresada
+  $sql = "SELECT id, nombre, comentario, fecha FROM epinedaPodcast.Publicacion WHERE fecha >= '$fecha_consulta' ORDER BY fecha DESC";
+
+  $result = mysqli_query($conn, $sql);
+
+  if (mysqli_num_rows($result) > 0) {
+    // Mostrar los datos en una tabla
+    echo "<table>";
+    echo "<tr><th>ID</th><th>Nombre</th><th>Comentario</th><th>Fecha</th></tr>";
+    while ($row = mysqli_fetch_assoc($result)) {
+      echo "<tr><td>" . $row["id"] . "</td><td>" . $row["nombre"] . "</td><td>" . $row["comentario"] . "</td><td>" . $row["fecha"] . "</td></tr>";
+    }
+    echo "</table>";
+  } else {
+    echo "No se encontraron publicaciones para la fecha seleccionada.";
+  }
+
+  // Cerrar la conexión
+  mysqli_close($conn);
+?>
+
+
+
+
+:::::::::::::::::::::::::::::: Probar funcionamiento ::::::::::::::::::::::::::::::
+
+1. cd /var/www/html
+	php conexion.php
+	
+2. Ir a algun navegador y en la barra de direcciones colocar:
+	IpServidorUbuntu/conexion.php
+	
+
+

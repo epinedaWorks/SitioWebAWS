@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Insercion de datos en MySQL con PHP</title>
+</head>
+<body>
+	<h1>Insercion de datos en MySQL con PHP</h1>
+	<form action="insertar.php" method="post">
+	  <label for="nombre">Nombre:</label>
+	  <input type="text" id="nombre" name="nombre"><br><br>
+	  <label for="comentario">comentario:</label>
+	  <input type="text" id="comentario" name="comentario"><br><br>
+	  <label for="fecha">Fecha:</label>
+	  <input type="date" id="fecha" name="fecha"><br><br>
+	  <input type="submit" value="Guardar">
+	</form>
+
+	<form action="consultar.php" method="post">
+	  <label for="fecha_consulta">Consultar publicaciones a partir de la fecha:</label>
+	  <input type="date" id="fecha_consulta" name="fecha_consulta"><br><br>
+	  <input type="submit" value="Consultar">
+	</form>
+</body>
+</html>
